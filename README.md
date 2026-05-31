@@ -1,6 +1,7 @@
-![PyPI 📦   ](https://github.com/Boulder-Investment-Technologies/lppls/workflows/PyPI%20%F0%9F%93%A6%20%20%20/badge.svg?branch=master)
-![PyTests](https://github.com/Boulder-Investment-Technologies/lppls/workflows/PyTests/badge.svg?branch=master)
-[![Downloads](https://pepy.tech/badge/lppls)](https://pepy.tech/project/lppls)
+![Publish to PyPI](https://github.com/Boulder-Investment-Technologies/lppls/actions/workflows/publish-to-pypi.yml/badge.svg?branch=master)
+![PyTests](https://github.com/Boulder-Investment-Technologies/lppls/actions/workflows/pytest.yml/badge.svg?branch=master)
+[![PyPI Downloads](https://img.shields.io/pypi/dm/lppls?color=blue&style=plastic)](https://pypi.org/project/lppls/)
+
 
 # Log Periodic Power Law Singularity (LPPLS) Model 
 `lppls` is a Python module for fitting the LPPLS model to data.
@@ -9,7 +10,9 @@
 ## Overview
 The LPPLS model provides a flexible framework to detect bubbles and predict regime changes of a financial asset. A bubble is defined as a faster-than-exponential increase in asset price, that reflects positive feedback loop of higher return anticipations competing with negative feedback spirals of crash expectations. It models a bubble price as a power law with a finite-time singularity decorated by oscillations with a frequency increasing with time. 
 
-🆕 The LPPLS Confidence Indicator (LPPLS CI), an indicator derived from the LPPLS model, is applied to both G7 and BRICS nations and has been made available as a digital resource. To experience and interact with the data visualization, one can access the platform hosted by Boulder Investment Technologies at ✨[signals.boulderinvestment.tech](https://signals.boulderinvestment.tech)✨. 
+Try the demo: 
+
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1Qvbdj4DGNcC9Oop9mA6Vzdvsoec6k2I0?usp=sharing)
 
 Here is the model:
 
@@ -39,13 +42,16 @@ The model has three components representing a bubble. The first, $A+B(t_c-t)^{m}
 Dependencies
 
 `lppls` requires:
- - Python (>= 3.7)
- - Matplotlib (>= 3.1.1)
- - Numba (>= 0.51.2)
- - NumPy (>= 1.17.0)
- - Pandas (>= 0.25.0)
- - SciPy (>= 1.3.0)
- - Pytest (>= 6.2.1)
+ - Python (>= 3.10)
+ - CMA-ES (>= 3.3.0)
+ - Matplotlib (>= 3.5.0)
+ - Numba (>= 0.56.0)
+ - NumPy (>= 1.23.0)
+ - Pandas (>= 1.5.0)
+ - SciPy (>= 1.9.0)
+ - Scikit-learn (>= 1.2.0)
+ - tqdm (>= 4.64.0)
+ - Xarray (>= 2024.1.0)
 
 User installation
 ```
@@ -99,7 +105,14 @@ res = lppls_model.mp_compute_nested_fits(
     outer_increment=1, 
     inner_increment=5, 
     max_searches=25,
-    # filter_conditions_config={} # not implemented in 0.6.x
+    filter_conditions_config={
+        "m_min": 0.0,
+        "m_max": 1.0,
+        "w_min": 2.0,
+        "w_max": 15.0,
+        "O_min": 2.5,
+        "D_min": 0.5,
+    },
 )
 
 lppls_model.plot_confidence_indicators(res)
@@ -119,6 +132,19 @@ If you wish to store `res` as a pd.DataFrame, use `compute_indicators`.
   <img src="https://raw.githubusercontent.com/Boulder-Investment-Technologies/lppls/master/img/compute_indicator_df.png"  width="500"/>
   
 </details>
+
+## Quantile Regression
+Based on the work in Zhang, Zhang & Sornette 2016, quantile regression for LPPLS uses the L1 norm (sum of absolute differences) instead of the L2 norm
+and applies the q-dependent loss function during calibration. Please refer to the example usage [here](https://github.com/Boulder-Investment-Technologies/lppls/blob/master/notebooks/quantile_regression.ipynb). 
+
+## Lagrange Regularization for Bubble Start Time Detection
+The `lppls` library includes a method for determining the start time of a financial bubble using Lagrange regularization. This technique, inspired by the work of Demos & Sornette (2017), addresses the challenge of model overfitting when the bubble's inception is unknown.
+
+By introducing a regularization term to the normalized sum of squared residuals, the method objectively identifies the optimal fitting window size. This allows for a more robust and data-driven estimation of the bubble's start time without requiring exogenous information, which is a significant improvement over previous approaches.
+
+![Lagrange Regularization Plot](https://raw.githubusercontent.com/Boulder-Investment-Technologies/lppls/master/img/lagrange_regularization_plot.png)
+
+This functionality is available through the `detect_bubble_start_time_via_lagrange` method. For detailed usage, please refer to the tutorial [here](https://github.com/Boulder-Investment-Technologies/lppls/blob/master/notebooks/lagrange_regularization.ipynb).
 
 ## Other Search Algorithms
 Shu and Zhu (2019) proposed [CMA-ES](https://en.wikipedia.org/wiki/CMA-ES) for identifying the best estimation of the three non-linear parameters ($t_c$, $m$, $\omega$).
@@ -141,3 +167,5 @@ Performance Note: this works well for single fits but can take a long time for c
  - Shu, M. and Zhu, W. Real-time Prediction of Bitcoin Bubble Crashes. 2019.
  - Sornette, D. Why Stock Markets Crash: Critical Events in Complex Financial Systems. Princeton University Press. 2002.
  - Sornette, D. and Demos, G. and Zhang, Q. and Cauwels, P. and Filimonov, V. and Zhang, Q., Real-Time Prediction and Post-Mortem Analysis of the Shanghai 2015 Stock Market Bubble and Crash (August 6, 2015). Swiss Finance Institute Research Paper No. 15-31.
+ - Demos, G. and Sornette, D. Lagrange regularisation approach to compare nested data sets and determine objectively financial bubbles' inceptions. 2017. arXiv:1707.07162
+ - Zhang, Q., Zhang, Q., and Sornette, D. Early Warning Signals of Financial Crises with Multi-Scale Quantile Regressions of Log-Periodic Power Law Singularities. PLOS ONE. 2016. DOI:10.1371/journal.pone.0165819
